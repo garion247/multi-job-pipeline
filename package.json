@@ -1,0 +1,9 @@
+{
+  "name": "multi-job-pipeline",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "node -c src/app.js && echo 'Lint OK'",
+    "test": "node tests/test.js",
+    "build": "mkdir -p dist && cp src/app.js dist/ && echo 'Build OK'"
+  }
+}
