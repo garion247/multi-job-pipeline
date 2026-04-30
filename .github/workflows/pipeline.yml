@@ -32,9 +32,24 @@ jobs:
   build:
     needs: [ lint, test ]
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - id: version
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Build version: $VERSION"
       - run: npm run build
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read upstream version
+        run: |
+          echo "Packaging version ${{ needs.build.outputs.version }}"
