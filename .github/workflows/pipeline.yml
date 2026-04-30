@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -52,6 +56,9 @@ jobs:
     needs: build
     if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.example.com
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -59,16 +66,14 @@ jobs:
           path: incoming/
       - run: |
           echo "Deploying ${{ needs.build.outputs.version }} to staging..."
-          ls -la incoming/
-          echo "Staging deployment complete"
+          echo "Deployment complete"
 
   cleanup:
     needs: [ lint, test, build, deploy-staging ]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Report results
-        run: |
+      - run: |
           echo "lint:           ${{ needs.lint.result }}"
           echo "test:           ${{ needs.test.result }}"
           echo "build:          ${{ needs.build.result }}"
