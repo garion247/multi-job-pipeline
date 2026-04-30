@@ -40,28 +40,36 @@ jobs:
         with:
           node-version: '20'
       - id: version
-        run: |
-          VERSION="1.0.${{ github.run_number }}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        run: echo "version=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
       - run: npm run build
-      - name: Upload dist
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ steps.version.outputs.version }}
           path: dist/
           retention-days: 7
 
-  package:
+  deploy-staging:
     needs: build
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
-      - name: Download dist
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: dist-${{ needs.build.outputs.version }}
           path: incoming/
-      - name: Inspect downloaded files
-        run: |
-          echo "Packaging version ${{ needs.build.outputs.version }}"
+      - run: |
+          echo "Deploying ${{ needs.build.outputs.version }} to staging..."
           ls -la incoming/
-          cat incoming/app.js
+          echo "Staging deployment complete"
+
+  cleanup:
+    needs: [ lint, test, build, deploy-staging ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report results
+        run: |
+          echo "lint:           ${{ needs.lint.result }}"
+          echo "test:           ${{ needs.test.result }}"
+          echo "build:          ${{ needs.build.result }}"
+          echo "deploy-staging: ${{ needs.deploy-staging.result }}"
